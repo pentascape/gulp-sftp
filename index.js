@@ -1,14 +1,15 @@
 'use strict';
-var path = require('path');
-var fs = require('fs');
-var gutil = require('gulp-util');
-var util = require('util');
-var through = require('through2');
+var gulp       = require('gulp');
+var path       = require('path');
+var fs         = require('fs');
+var gutil      = require('gulp-util');
+var util       = require('util');
+var through    = require('through2');
 var Connection = require('ssh2');
-var async = require('async');
-var parents = require('parents');
-var Stream = require('stream');
-var assign = require('object-assign');
+var async      = require('async');
+var parents    = require('parents');
+var Stream     = require('stream');
+var assign     = require('object-assign');
 
 
 var finished = true;
@@ -41,7 +42,7 @@ function getOptions(options) {
     if ( options.authKey && fs.existsSync(authFile) ) {
         var auth = JSON.parse(fs.readFileSync(authFile,'utf8'))[options.authKey];
         if ( !auth ) {
-            this.emit('error', new gutil.PluginError('gulp-sftp', 'Could not find authkey in .ftppass'));
+            gulp.emit('error', new gutil.PluginError('gulp-sftp', 'Could not find authkey in .ftppass'));
         }
         if ( typeof auth == "string" && auth.indexOf(":") != -1 ) {
             var authparts = auth.split(":");
@@ -98,7 +99,7 @@ function getOptions(options) {
                 }
             }
         } else if ( !options.key.contents ) {
-            this.emit('error', new gutil.PluginError('gulp-sftp', 'Cannot find RSA key, searched: ' + options.key.location.join(', ')));
+            gulp.emit('error', new gutil.PluginError('gulp-sftp', 'Cannot find RSA key, searched: ' + options.key.location.join(', ')));
         }
     }
 
@@ -123,7 +124,7 @@ var connection = (function connection() {
         persist_connection = persist || persist_connection;
 
         if ( !connection_options ) {
-            this.emit('error', new gutil.PluginError('gulp-sftp', 'No connection options specified'));
+            gulp.emit('error', new gutil.PluginError('gulp-sftp', 'No connection options specified'));
         }
 
         gutil.log('Connection :: connecting');
@@ -132,7 +133,7 @@ var connection = (function connection() {
         gutil.log('Connection :: connected');
 
         conn.on('error', function (err) {
-            this.emit('error', new gutil.PluginError('gulp-sftp', err));
+            gulp.emit('error', new gutil.PluginError('gulp-sftp', err));
         });
 
         conn.on('end', function () {
@@ -142,7 +143,7 @@ var connection = (function connection() {
         conn.on('close', function (err) {
             if ( !finished ) {
                 gutil.log('gulp-sftp', "SFTP abrupt closure");
-                this.emit('error', new gutil.PluginError('gulp-sftp', "SFTP abrupt closure"));
+                gulp.emit('error', new gutil.PluginError('gulp-sftp', "SFTP abrupt closure"));
             }
             if ( err ) {
                 gutil.log('Connection :: close, ', gutil.colors.red('Error: ' + err));
@@ -160,6 +161,7 @@ var connection = (function connection() {
     }
 
     function close() {
+        finished = true;
         persist_connection = false;
         if ( conn ) {
             conn.end();
@@ -194,7 +196,7 @@ function pool(remotePath, uploader) {
                 gutil.log('SFTP :: SFTP session closed');
                 sftpCache = null;
                 if ( !finished ) {
-                    this.emit('error', new gutil.PluginError('gulp-sftp', "SFTP abrupt closure"));
+                    gulp.emit('error', new gutil.PluginError('gulp-sftp', "SFTP abrupt closure"));
                 }
             });
 
@@ -314,7 +316,7 @@ module.exports = function (options) {
 
                 stream.on('close', function (err) {
                     if ( err ) {
-                        this.emit('error', new gutil.PluginError('gulp-sftp', err));
+                        gulp.emit('error', new gutil.PluginError('gulp-sftp', err));
                     } else {
                         if ( logFiles ) {
                             gutil.log('gulp-sftp:', gutil.colors.green('Uploaded: ') + file.relative + gutil.colors.green(' => ') + finalRemotePath);
